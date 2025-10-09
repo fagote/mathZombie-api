@@ -1,9 +1,7 @@
+.env
 __pycache__/
 *.pyc
 
 uploads/
 
-testfiles/
-
 .venv/
-.env/

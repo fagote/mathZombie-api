@@ -72,7 +72,7 @@ async def upload_csv(file: UploadFile = File(...)):
 
     Escreva a resposta como um e-mail para o professor, em português formal e sem negritos.
     """
-
+ 
     # ======= Gera diagnóstico com Gemini =======
     model = genai.GenerativeModel("models/gemini-2.5-flash")
     response = model.generate_content(prompt)

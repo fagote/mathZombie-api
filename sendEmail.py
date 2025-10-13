@@ -26,7 +26,7 @@ async def send_mail(email: EmailSchema):
         subject=email.subject,
         recipients=email.email,
         body=email.body,
-        subtype="html",  # correto
+        subtype="html",  
     )
 
     fm = FastMail(conf)

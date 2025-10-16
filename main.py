@@ -4,14 +4,24 @@ import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from dotenv import load_dotenv
 import google.generativeai as genai
-
-from sendEmail import send_mail, EmailSchema  # importa a função de envio
+from sendEmail import send_mail, EmailSchema  
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://fagote.github.io/mathZombie/",  
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Carrega variáveis de ambiente e configura Gemini
 load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 

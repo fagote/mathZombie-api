@@ -12,7 +12,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://fagote.github.io/mathZombie/",  
+        "https://fagote.github.io",  
     ],
     allow_credentials=True,
     allow_methods=["*"],

@@ -6,16 +6,33 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from sendEmail import send_mail, EmailSchema  
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.requests import Request
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://fagote.github.io",
+        "https://fagote.github.io/mathZombie",
+        ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.options("/upload-csv")
+async def options_upload_csv(request: Request):
+    response = JSONResponse({"message": "Preflight OK"})
+    origin = request.headers.get("origin")
+
+    if origin in ["https://fagote.github.io", "https://fagote.github.io/mathZombie"]:
+        response.headers["Access-Control-Allow-Origin"] = origin
+
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -108,7 +125,8 @@ async def upload_csv(file: UploadFile = File(...)):
     else:
         mensagem = "E-mail do professor não encontrado no CSV."
 
-    return {
+    origin = request.headers.get("origin")
+    response = JSONResponse({
         "aluno": nome,
         "idade": idade,
         "questoes": total_questoes,
@@ -116,7 +134,12 @@ async def upload_csv(file: UploadFile = File(...)):
         "tempo_medio": f"{tempo_medio:.2f}s",
         "diagnostico": diagnostico,
         "mensagem": mensagem
-    }
+    })
+
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+
+    return response
 
 @app.get("/list")
 def list_csv():

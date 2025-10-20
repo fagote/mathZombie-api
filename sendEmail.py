@@ -1,34 +1,33 @@
 import os
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from pydantic import BaseModel, EmailStr
 from typing import List
-from dotenv import load_dotenv
+import logging
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
-conf = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM=os.getenv("MAIL_FROM"),
-    MAIL_PORT=int(os.getenv("MAIL_PORT")),
-    MAIL_SERVER=os.getenv("MAIL_SERVER"),
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-)
-
+# Schema para enviar e-mails (mesma interface que você já usava)
 class EmailSchema(BaseModel):
-    email: List[EmailStr]
+    email: List[EmailStr]      # lista de destinatários
     subject: str
-    body: str
+    body: str                  # HTML
 
-async def send_mail(email: EmailSchema):
-    message = MessageSchema(
-        subject=email.subject,
-        recipients=email.email,
-        body=email.body,
-        subtype="html",  
-    )
+async def send_mail(email_data: EmailSchema):
+    try:
+        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
+        from_email = os.getenv("EMAIL_FROM", "no-reply@mathzombie.com")
 
-    fm = FastMail(conf)
-    await fm.send_message(message)
-    return {"message": f"E-mail enviado com sucesso para {email.email}!"}
+        message = Mail(
+            from_email=from_email,
+            to_emails=email_data.email,
+            subject=email_data.subject,
+            html_content=email_data.body
+        )
+        response = sg.send(message)
+        logger.info("E-mail enviado via SendGrid: status_code=%s", response.status_code)
+        return {"message": f"E-mail enviado com sucesso para {email_data.email}!"}
+
+    except Exception as e:
+        logger.exception("Erro ao enviar e-mail via SendGrid")
+        raise e

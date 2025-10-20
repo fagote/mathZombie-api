@@ -4,47 +4,49 @@ import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from dotenv import load_dotenv
 import google.generativeai as genai
-from sendEmail import send_mail, EmailSchema  
+from sendEmail import send_mail, EmailSchema
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# --- CORS para permitir chamadas do GitHub Pages ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # ideal depois: ["https://seuusuario.github.io"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
+# --- Configura Gemini ---
 load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 @app.post("/upload-csv")
 async def upload_csv(file: UploadFile = File(...)):
-    """
-    Recebe o CSV de um jogador, analisa os dados e envia um diagnóstico
-    detalhado por e-mail ao professor informado no próprio CSV.
-    """
+    """Recebe o CSV, analisa e envia o diagnóstico por e-mail."""
+
     if not file.filename.endswith(".csv"):
         return {"error": "Por favor, envie um arquivo CSV válido."}
 
-    # Lê o CSV em memória
+    # Lê o CSV diretamente da memória
     contents = await file.read()
     df = pd.read_csv(io.BytesIO(contents))
 
-    nome = str(df["nome"].iloc[0]) if "nome" in df else "Aluno desconhecido"
-    idade = str(df["idade"].iloc[0]) if "idade" in df else "N/A"
-    email = str(df["email"].iloc[0]) if "email" in df else None
+    # Extrai campos do CSV
+    nome = str(df.get("nome", ["Aluno desconhecido"])[0])
+    idade = str(df.get("idade", ["N/A"])[0])
+    email = str(df.get("email", [None])[0])
 
-    total_questoes = int(len(df))
-    acertos = int(len(df[df["resultado"] == "certo"]))
-    erros = int(len(df[df["resultado"] == "errado"]))
-    taxa_acerto = float((acertos / total_questoes) * 100) if total_questoes else 0.0
-    tempo_medio = float(df["tempo_resposta"].astype(float).mean()) if "tempo_resposta" in df else 0.0
+    total_questoes = len(df)
+    acertos = len(df[df["resultado"] == "certo"]) if "resultado" in df else 0
+    erros = len(df[df["resultado"] == "errado"]) if "resultado" in df else 0
+    taxa_acerto = (acertos / total_questoes * 100) if total_questoes else 0
+    tempo_medio = (
+        df["tempo_resposta"].astype(float).mean()
+        if "tempo_resposta" in df
+        else 0
+    )
 
     resumo_estatistico = f"""
     Nome: {nome}
@@ -56,10 +58,10 @@ async def upload_csv(file: UploadFile = File(...)):
     Tempo médio de resposta: {tempo_medio:.2f} segundos
     """
 
-    # Limita as primeiras linhas do CSV (para não sobrecarregar o prompt)
+    # Limita o CSV para o prompt
     tabela_texto = df.head(50).to_csv(index=False)
 
-    # ======= Prompt para o Gemini =======
+    # --- Prompt do Gemini ---
     prompt = f"""
     Você é um especialista em educação matemática com foco em avaliação diagnóstica.
 
@@ -80,18 +82,14 @@ async def upload_csv(file: UploadFile = File(...)):
 
     Escreva a resposta como um e-mail para o professor, em português formal e sem negritos.
     """
- 
-    # ======= Gera diagnóstico com Gemini =======
+
+    # --- Chamada ao Gemini ---
     model = genai.GenerativeModel("models/gemini-2.5-flash")
     response = model.generate_content(prompt)
-    diagnostico = response.text
+    diagnostico = response.text.strip()
 
-    # ======= Salva CSV atualizado =======
-    df["diagnostico"] = diagnostico
-    file_path = os.path.join(UPLOAD_DIR, f"diagnostico_{file.filename}")
-    df.to_csv(file_path, index=False)
-
-    # ======= Envia e-mail ao professor =======
+    # --- Envio de e-mail ---
+    mensagem = "E-mail do professor não encontrado no CSV."
     if email:
         email_data = EmailSchema(
             email=[email],
@@ -105,8 +103,6 @@ async def upload_csv(file: UploadFile = File(...)):
         )
         await send_mail(email_data)
         mensagem = f"E-mail enviado com sucesso para {email}!"
-    else:
-        mensagem = "E-mail do professor não encontrado no CSV."
 
     return {
         "aluno": nome,
@@ -117,16 +113,3 @@ async def upload_csv(file: UploadFile = File(...)):
         "diagnostico": diagnostico,
         "mensagem": mensagem
     }
-
-@app.get("/list")
-def list_csv():
-    return {"files": os.listdir(UPLOAD_DIR)}
-
-@app.get("/read/{filename}") 
-def read_csv(filename: str):
-    file_path = os.path.join(UPLOAD_DIR, filename)
-    if not os.path.exists(file_path):
-        return {"error": "Arquivo não encontrado"}
-    
-    df = pd.read_csv(file_path)
-    return {"filename": filename, "rows": len(df), "data": df.to_dict(orient="records")}

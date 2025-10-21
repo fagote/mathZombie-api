@@ -3,6 +3,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from pydantic import BaseModel, EmailStr
 from typing import List
+from dotenv import load_dotenv
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,10 +14,11 @@ class EmailSchema(BaseModel):
     subject: str
     body: str                  # HTML
 
-async def send_mail(email_data: EmailSchema):
+load_dotenv()
+def send_mail(email_data: EmailSchema):
     try:
         sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
-        from_email = os.getenv("EMAIL_FROM", "no-reply@mathzombie.com")
+        from_email = os.getenv("EMAIL_FROM", "leofagot81@gmail.com")
 
         message = Mail(
             from_email=from_email,

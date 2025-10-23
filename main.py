@@ -113,7 +113,7 @@ Escreva a resposta como um e-mail para o professor, em português formal e sem n
                 """
             )
             try:
-                send_mail(email_data)
+                await send_mail(email_data)
                 mensagem = f"E-mail enviado com sucesso para {email}!"
                 logger.info("E-mail enviado com sucesso para %s", email)
             except Exception as e:
@@ -135,4 +135,4 @@ Escreva a resposta como um e-mail para o professor, em português formal e sem n
         return {"error": f"Erro interno: {str(e)}"}
 
 
-#curl -X POST "http://127.0.0.1:8000/upload-csv" \ -F "file=@/home/leonardo/Downloads/teste2_partida.csv"
+#curl -X POST "http://127.0.0.1:8000/upload-csv" \-F "file=@/home/leonardo/Downloads/teste2_partida.csv"

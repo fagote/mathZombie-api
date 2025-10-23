@@ -14,11 +14,10 @@ class EmailSchema(BaseModel):
     subject: str
     body: str                  # HTML
 
-load_dotenv()
-def send_mail(email_data: EmailSchema):
+async def send_mail(email_data: EmailSchema):
     try:
         sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
-        from_email = os.getenv("EMAIL_FROM", "leofagot81@gmail.com")
+        from_email = os.getenv("EMAIL_FROM", "no-reply@mathzombie.com")
 
         message = Mail(
             from_email=from_email,

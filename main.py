@@ -34,7 +34,9 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://fagote.github.io"],
+    allow_origins=["https://fagote.github.io",
+                    "file://"
+                    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

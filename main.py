@@ -30,13 +30,11 @@ if not SENDGRID_KEY:
 
 genai.configure(api_key=API_KEY)
 
-# Configuração da API FastAPI
 app = FastAPI()
 
-# CORS liberado (pode restringir ao domínio do jogo)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://fagote.github.io"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

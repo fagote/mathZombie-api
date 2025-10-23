@@ -97,7 +97,8 @@ Dados gerais:
 Primeiras linhas do CSV:
 {tabela_texto}
 
-Escreva um diagnóstico formal em português, no formato de e-mail para o professor.
+Escreva um diagnóstico formal no formato de e-mail, para o professor, sem formatação e sem asteriscos. 
+É interessante adicionar tópicos ao longo do email para facilitar a leitura do professor.
 """
 
         # Gera diagnóstico em background
